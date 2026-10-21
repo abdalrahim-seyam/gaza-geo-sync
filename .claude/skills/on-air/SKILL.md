@@ -32,12 +32,12 @@ Only speak at designated milestones:
 * **Synchronized Display**: Always print the exact spoken sentence on screen alongside the audio.
 * **Rate Limits**: Never speak more than one line per minute. Speak only at the start or end of a step, never mid-step. Never repeat yourself.
 
-### 4. NEEDED FROM AHMED (External Action Gate)
+### 4. NEEDED FROM ABDALRAHIM (External Action Gate)
 Whenever an action is required outside the terminal (in Google Chrome, GitHub, OAuth setup, or a mobile phone):
 1. Immediately pause execution.
-2. Present a prominent UI box titled `### NEEDED FROM AHMED` with numbered, unambiguous steps (exact URL, specific button, exact text to input).
+2. Present a prominent UI box titled `### NEEDED FROM ABDALRAHIM` with numbered, unambiguous steps (exact URL, specific button, exact text to input).
 3. Speak one concise sentence explaining what is needed.
-4. Wait silently until Ahmed responds with `"done"`.
+4. Wait silently until Abdalrahim responds with `"done"`.
 
 ## Detailed Reference
 See [voice-and-prompts-reference.md](file:///Users/abood/Downloads/mMshwar/.claude/skills/on-air/voice-and-prompts-reference.md) for speech phrasing examples and the standard external action template.

@@ -1,8 +1,8 @@
 # On-Air Voice & Prompts Reference
 
-## NEEDED FROM AHMED Template
+## NEEDED FROM ABDALRAHIM Template
 ```markdown
-### NEEDED FROM AHMED
+### NEEDED FROM ABDALRAHIM
 1. Open Google Cloud Console at https://console.cloud.google.com/apis/credentials.
 2. Click **Create Credentials** -> **OAuth Client ID**.
 3. Set Authorized Redirect URI to `http://localhost:3000/api/auth/callback/google`.
