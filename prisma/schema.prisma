@@ -1,0 +1,109 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum VehicleType {
+  CAR
+  BUS
+  AJALA
+}
+
+enum TripStatus {
+  ACTIVE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum RequestStatus {
+  OPEN
+  OFFER_ACCEPTED
+  FULFILLED
+  CANCELLED
+}
+
+model User {
+  id              String           @id @default(uuid())
+  name            String?
+  email           String           @unique
+  phone           String?
+  image           String?
+  vehicleType     VehicleType?
+  vehiclePhotos   String[]         @default([])
+  tripsOffered    Trip[]           @relation("DriverTrips")
+  bookings        Booking[]        @relation("PassengerBookings")
+  specialRequests SpecialRequest[] @relation("RiderRequests")
+  specialOffers   SpecialOffer[]   @relation("DriverOffers")
+  createdAt       DateTime         @default(now())
+}
+
+model Trip {
+  id             String        @id @default(uuid())
+  driverId       String
+  driver         User          @relation("DriverTrips", fields: [driverId], references: [id])
+  originName     String
+  originLat      Float
+  originLng      Float
+  destName       String
+  destLat        Float
+  destLng        Float
+  routePolyline  String
+  departureTime  DateTime
+  totalSeats     Int
+  availableSeats Int
+  pricePerSeat   Float
+  status         TripStatus    @default(ACTIVE)
+  bookings       Booking[]
+  createdAt      DateTime      @default(now())
+
+  @@index([status, departureTime])
+}
+
+model Booking {
+  id          String        @id @default(uuid())
+  tripId      String
+  trip        Trip          @relation(fields: [tripId], references: [id])
+  passengerId String
+  passenger   User          @relation("PassengerBookings", fields: [passengerId], references: [id])
+  seatsCount  Int           @default(1)
+  status      BookingStatus @default(CONFIRMED)
+  createdAt   DateTime      @default(now())
+
+  @@unique([tripId, passengerId])
+}
+
+model SpecialRequest {
+  id          String         @id @default(uuid())
+  riderId     String
+  rider       User           @relation("RiderRequests", fields: [riderId], references: [id])
+  originName  String
+  destName    String
+  tripDate    DateTime
+  seatsNeeded Int            @default(1)
+  status      RequestStatus  @default(OPEN)
+  offers      SpecialOffer[]
+  createdAt   DateTime       @default(now())
+}
+
+model SpecialOffer {
+  id          String         @id @default(uuid())
+  requestId   String
+  request     SpecialRequest @relation(fields: [requestId], references: [id])
+  driverId    String
+  driver      User           @relation("DriverOffers", fields: [driverId], references: [id])
+  price       Float
+  isAccepted  Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+
+  @@unique([requestId, driverId])
+}
