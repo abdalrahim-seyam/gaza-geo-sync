@@ -14,12 +14,21 @@ export default function BookingsPage() {
 
   useEffect(() => {
     fetch('/api/user/trips')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch');
+        return res.json();
+      })
       .then((d) => {
-        setData(d);
+        setData({
+          bookings: Array.isArray(d?.bookings) ? d.bookings : [],
+          tripsOffered: Array.isArray(d?.tripsOffered) ? d.tripsOffered : [],
+        });
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {
+        setData({ bookings: [], tripsOffered: [] });
+        setLoading(false);
+      });
   }, []);
 
   return (
@@ -41,7 +50,7 @@ export default function BookingsPage() {
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
           }`}
         >
-          حجوزاتي كراكب ({data.bookings.length})
+          حجوزاتي كراكب ({data?.bookings?.length || 0})
         </button>
         <button
           onClick={() => setActiveTab('driver')}
@@ -51,7 +60,7 @@ export default function BookingsPage() {
               : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
           }`}
         >
-          مشاويري المطروحة ({data.tripsOffered.length})
+          مشاويري المطروحة ({data?.tripsOffered?.length || 0})
         </button>
       </div>
 
@@ -62,7 +71,7 @@ export default function BookingsPage() {
           ))}
         </div>
       ) : activeTab === 'rider' ? (
-        data.bookings.length === 0 ? (
+        (data?.bookings?.length || 0) === 0 ? (
           <div className="p-8 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
             <p className="text-xs text-slate-500">ليس لديك أي حجوزات نشطة حالياً</p>
             <Link
@@ -73,7 +82,7 @@ export default function BookingsPage() {
             </Link>
           </div>
         ) : (
-          data.bookings.map((b) => (
+          (data.bookings || []).map((b) => (
             <div
               key={b.id}
               className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5"
@@ -119,7 +128,7 @@ export default function BookingsPage() {
           ))
         )
       ) : (
-        data.tripsOffered.length === 0 ? (
+        (data?.tripsOffered?.length || 0) === 0 ? (
           <div className="p-8 text-center rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
             <p className="text-xs text-slate-500">لم تقم بطرح أي مشاوير بعد</p>
             <Link
@@ -130,7 +139,7 @@ export default function BookingsPage() {
             </Link>
           </div>
         ) : (
-          data.tripsOffered.map((t) => (
+          (data.tripsOffered || []).map((t) => (
             <div
               key={t.id}
               className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-2.5"

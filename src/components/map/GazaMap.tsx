@@ -34,12 +34,21 @@ export function GazaMap({
 
   useEffect(() => {
     setMounted(true);
-    if (!rtlPluginLoaded && typeof window !== 'undefined') {
+    if (typeof window !== 'undefined') {
       try {
-        maplibregl.setRTLTextPlugin(RTL_PLUGIN_URL, true);
-        rtlPluginLoaded = true;
+        if (!maplibregl.getWorkerUrl()) {
+          maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs');
+        }
       } catch (err) {
-        // Plugin already set
+        // Ignore if already set
+      }
+
+      try {
+        if (maplibregl.getRTLTextPluginStatus() === 'unavailable') {
+          maplibregl.setRTLTextPlugin(RTL_PLUGIN_URL, true);
+        }
+      } catch (err) {
+        // Ignore if already set
       }
     }
   }, []);
@@ -65,6 +74,7 @@ export function GazaMap({
   return (
     <div className={className} style={{ position: 'relative', overflow: 'hidden' }}>
       <Map
+        mapLib={maplibregl as any}
         initialViewState={{
           longitude: origin?.lng ?? GAZA_CENTER.lng,
           latitude: origin?.lat ?? GAZA_CENTER.lat,

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db/prisma';
+import { mockTrips, MockTrip } from '@/lib/db/mock-data';
 
 export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const origin = searchParams.get('origin');
-    const destination = searchParams.get('destination');
+  const { searchParams } = new URL(request.url);
+  const origin = searchParams.get('origin')?.toLowerCase();
+  const destination = searchParams.get('destination')?.toLowerCase();
 
+  try {
     const whereClause: any = {
       status: 'ACTIVE',
       availableSeats: { gt: 0 },
@@ -37,8 +38,16 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(trips);
   } catch (error: any) {
-    console.error('Error fetching trips:', error);
-    return NextResponse.json({ error: 'تعذر جلب المشاوير' }, { status: 500 });
+    // If PostgreSQL is not reachable, gracefully serve mock Gaza trips
+    console.warn('Postgres unreachable, using local demo trips store:', error.message);
+    let filtered = mockTrips.filter((t) => t.status === 'ACTIVE' && t.availableSeats > 0);
+    if (origin) {
+      filtered = filtered.filter((t) => t.originName.toLowerCase().includes(origin));
+    }
+    if (destination) {
+      filtered = filtered.filter((t) => t.destName.toLowerCase().includes(destination));
+    }
+    return NextResponse.json(filtered);
   }
 }
 
@@ -65,31 +74,61 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'يرجى تحديد مكان الانطلاق والوجهة ووقت الرحلة' }, { status: 400 });
     }
 
-    // Identify or upsert the driver (supports QA mode demo driver or custom driver)
     const qaRole = request.cookies.get('qa_user_role')?.value;
     const email = qaRole === 'driver' ? 'driver@gaza-transit.local' : (body.email || `driver-${Date.now()}@gaza-transit.local`);
-
-    const driver = await prisma.user.upsert({
-      where: { email },
-      update: {
-        name: driverName || 'سائق المشوار',
-        phone: driverPhone || '+970599123456',
-        vehicleType: vehicleType,
-      },
-      create: {
-        email,
-        name: driverName || 'أبو العبد',
-        phone: driverPhone || '+970599123456',
-        vehicleType: vehicleType,
-        vehiclePhotos: ['/demo-ajala.jpg'],
-      },
-    });
-
     const parsedDeparture = new Date(departureTime);
 
-    const trip = await prisma.trip.create({
-      data: {
-        driverId: driver.id,
+    try {
+      const driver = await prisma.user.upsert({
+        where: { email },
+        update: {
+          name: driverName || 'سائق المشوار',
+          phone: driverPhone || '+970599123456',
+          vehicleType: vehicleType,
+        },
+        create: {
+          email,
+          name: driverName || 'أبو العبد',
+          phone: driverPhone || '+970599123456',
+          vehicleType: vehicleType,
+          vehiclePhotos: ['/demo-ajala.jpg'],
+        },
+      });
+
+      const trip = await prisma.trip.create({
+        data: {
+          driverId: driver.id,
+          originName,
+          originLat: Number(originLat) || 31.45,
+          originLng: Number(originLng) || 34.42,
+          destName,
+          destLat: Number(destLat) || 31.28,
+          destLng: Number(destLng) || 34.25,
+          routePolyline: routePolyline || '',
+          departureTime: parsedDeparture,
+          totalSeats: Number(totalSeats),
+          availableSeats: Number(totalSeats),
+          pricePerSeat: Number(pricePerSeat),
+          status: 'ACTIVE',
+        },
+        include: {
+          driver: {
+            select: {
+              name: true,
+              phone: true,
+              vehicleType: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json(trip, { status: 201 });
+    } catch (dbError) {
+      // In-memory fallback
+      console.warn('Postgres unreachable, saving trip to local store');
+      const newTrip: MockTrip = {
+        id: `mock-trip-${Date.now()}`,
+        driverId: `driver-${Date.now()}`,
         originName,
         originLat: Number(originLat) || 31.45,
         originLng: Number(originLng) || 34.42,
@@ -97,24 +136,23 @@ export async function POST(request: NextRequest) {
         destLat: Number(destLat) || 31.28,
         destLng: Number(destLng) || 34.25,
         routePolyline: routePolyline || '',
-        departureTime: parsedDeparture,
+        departureTime: parsedDeparture.toISOString(),
         totalSeats: Number(totalSeats),
         availableSeats: Number(totalSeats),
         pricePerSeat: Number(pricePerSeat),
         status: 'ACTIVE',
-      },
-      include: {
         driver: {
-          select: {
-            name: true,
-            phone: true,
-            vehicleType: true,
-          },
+          id: `driver-${Date.now()}`,
+          name: driverName || 'سائق مشوار',
+          phone: driverPhone || '+970599123456',
+          vehicleType: vehicleType as any,
+          vehiclePhotos: [],
         },
-      },
-    });
-
-    return NextResponse.json(trip, { status: 201 });
+        bookings: [],
+      };
+      mockTrips.unshift(newTrip);
+      return NextResponse.json(newTrip, { status: 201 });
+    }
   } catch (error: any) {
     console.error('Error creating trip:', error);
     return NextResponse.json({ error: 'فشل طرح المشوار' }, { status: 500 });
