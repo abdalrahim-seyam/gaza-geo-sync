@@ -1,4 +1,5 @@
 guest / landing-screen
-driver /offer create-trip-screen
 rider /trips available-trips-screen
+driver /offer create-trip-screen
 rider /bookings my-bookings-screen
+rider /profile profile-screen

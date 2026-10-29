@@ -1,3 +1,6 @@
+import Link from 'next/link';
+import { Compass, PlusCircle } from 'lucide-react';
+
 export default function HomePage() {
   return (
     <div className="space-y-4">
@@ -6,8 +9,25 @@ export default function HomePage() {
           أهلاً بك في مشوار
         </h2>
         <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-          خطوط المواصلات العامة بين مدن قطاع غزة على شارعي صلاح الدين والرشيد.
+          خطوط المواصلات العامة والتنقل بين مدن قطاع غزة على شارعي صلاح الدين والرشيد.
         </p>
+
+        <div className="mt-4 flex gap-2">
+          <Link
+            href="/trips"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm transition-colors"
+          >
+            <Compass className="w-4 h-4" />
+            <span>استكشف الرحلات</span>
+          </Link>
+          <Link
+            href="/offer"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 min-h-[44px] py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium text-sm transition-colors"
+          >
+            <PlusCircle className="w-4 h-4" />
+            <span>اطرح مشوار</span>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
