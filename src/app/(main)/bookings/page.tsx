@@ -1,11 +1,22 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { CalendarCheck, Car, MapPin, Phone, Users, Clock, AlertCircle } from 'lucide-react';
+import { CalendarCheck, Car, MapPin, Phone, Users, Clock, AlertCircle, LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function BookingsPage() {
-  const [activeTab, setActiveTab] = useState<'rider' | 'driver'>('rider');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'rider' | 'driver'>(
+    user?.role === 'driver' ? 'driver' : 'rider'
+  );
+
+  useEffect(() => {
+    if (user?.role === 'driver') {
+      setActiveTab('driver');
+    }
+  }, [user?.role]);
+
   const [data, setData] = useState<{ bookings: any[]; tripsOffered: any[] }>({
     bookings: [],
     tripsOffered: [],
@@ -33,11 +44,22 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-4 max-w-md mx-auto pb-10">
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <h1 className="text-base font-bold text-slate-900 dark:text-white">مشاويري وسجل الحجوزات</h1>
-        <p className="text-xs text-slate-500 mt-1">
-          تابع رحلاتك القادمة وبيانات التواصل المباشر مع السائقين أو الركاب.
-        </p>
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-slate-900 dark:text-white">مشاويري وسجل الحجوزات</h1>
+          <p className="text-xs text-slate-500 mt-1">
+            تابع رحلاتك القادمة وبيانات التواصل المباشر مع السائقين أو الركاب.
+          </p>
+        </div>
+        {!user && (
+          <Link
+            href="/login"
+            className="shrink-0 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-emerald-600 flex items-center gap-1"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>تسجيل</span>
+          </Link>
+        )}
       </div>
 
       {/* Tabs */}
@@ -90,31 +112,32 @@ export default function BookingsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <span className="text-xs font-bold text-slate-900 dark:text-white">
-                    {b.trip?.driver?.name || 'سائق مشوار'}
+                    {b.trip?.originName} ← {b.trip?.destName}
                   </span>
                   <span className="block text-[11px] text-slate-400">
-                    {b.trip?.driver?.vehicleType === 'AJALA' ? 'عجلة' : 'سيارة'}
+                    السائق: {b.trip?.driver?.name || 'سائق مشوار'}
                   </span>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                  مؤكد ✓
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
+                  مؤكد ({b.seatsCount} مقعد)
                 </span>
               </div>
 
-              <div className="text-xs space-y-1 text-slate-600 dark:text-slate-300 py-1">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>من: {b.trip?.originName}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                  <span>إلى: {b.trip?.destName}</span>
-                </div>
+              <div className="flex items-center gap-3 text-xs text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  {b.trip?.departureTime ? new Date(b.trip.departureTime).toLocaleTimeString('ar-EG', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }) : 'قريباً'}
+                </span>
+                <span className="text-slate-400">•</span>
+                <span>{b.trip?.pricePerSeat ? `${b.trip.pricePerSeat} ₪ للمقعد` : ''}</span>
               </div>
 
               {b.trip?.driver?.phone && (
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs">
-                  <span className="text-slate-500">للتواصل مع السائق:</span>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                  <span className="text-slate-500">هاتف السائق للتنسيق:</span>
                   <a
                     href={`tel:${b.trip.driver.phone}`}
                     className="font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 dir-ltr"

@@ -3,16 +3,24 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Compass, PlusCircle, CalendarCheck, User } from 'lucide-react';
+import { Compass, PlusCircle, CalendarCheck, User, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { user } = useAuth();
+
+  const isDriver = user?.role === 'driver';
 
   const navItems = [
     { label: 'استكشف', href: '/trips', icon: Compass },
-    { label: 'اطرح مشوار', href: '/offer', icon: PlusCircle },
-    { label: 'مشاويري', href: '/bookings', icon: CalendarCheck },
-    { label: 'حسابي', href: '/profile', icon: User },
+    { label: isDriver ? 'طرح رحلة' : 'اطرح مشوار', href: '/offer', icon: PlusCircle },
+    { label: isDriver ? 'رحلاتي' : 'حجوزاتي', href: '/bookings', icon: CalendarCheck },
+    {
+      label: user ? (user.role === 'driver' ? 'سائق' : 'حسابي') : 'دخول',
+      href: user ? '/profile' : '/login',
+      icon: user ? User : LogIn,
+    },
   ];
 
   return (

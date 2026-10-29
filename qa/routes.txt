@@ -1,4 +1,5 @@
 guest / landing-screen
+guest /login login-role-selection-screen
 rider /trips available-trips-screen
 driver /offer create-trip-screen
 rider /bookings my-bookings-screen

@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { User, Wifi, Download, Shield, HardDrive, Check, RefreshCw } from 'lucide-react';
+import { User, Wifi, Download, Shield, HardDrive, Check, RefreshCw, Car, LogOut, ArrowLeftRight } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { drainOutbox } from '@/lib/offline/sync';
+import Link from 'next/link';
 
 export default function ProfilePage() {
+  const { user, logout, switchRole } = useAuth();
   const [wifiOnlyPhotos, setWifiOnlyPhotos] = useState(true);
   const [downloadingPhotos, setDownloadingPhotos] = useState(false);
   const [photoSyncDone, setPhotoSyncDone] = useState(false);
@@ -26,23 +29,87 @@ export default function ProfilePage() {
     setTimeout(() => setSyncStatus(''), 4000);
   };
 
+  if (!user) {
+    return (
+      <div className="space-y-4 max-w-md mx-auto py-6">
+        <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-4 shadow-sm">
+          <div className="w-14 h-14 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
+            <User className="w-7 h-7" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">لم تسجل دخولك بعد</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              اختر ما إذا كنت راكباً تبحث عن رحلة أو سائقاً تريد طرح مشاوير في قطاع غزة.
+            </p>
+          </div>
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors shadow-sm"
+          >
+            تسجيل الدخول واختيار الصفة
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isDriver = user.role === 'driver';
+
   return (
     <div className="space-y-4 max-w-md mx-auto pb-10">
       {/* User Card */}
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-800 dark:text-emerald-300 font-bold text-lg">
-          ع
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center text-emerald-800 dark:text-emerald-300 font-bold text-lg">
+              {user.name.charAt(0)}
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">{user.name}</h2>
+              <p className="text-xs text-slate-500 dir-ltr text-right font-mono">{user.phone}</p>
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold ${
+                  isDriver
+                    ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300'
+                    : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300'
+                }`}>
+                  {isDriver ? 'سائق مركبة' : 'راكب'}
+                </span>
+                {isDriver && user.vehicleType && (
+                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                    {user.vehicleType === 'AJALA' ? 'عجلة' : user.vehicleType === 'BUS' ? 'باص' : 'سيارة'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={logout}
+            title="تسجيل الخروج"
+            className="p-2 rounded-xl text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
-        <div>
-          <h2 className="text-sm font-bold text-slate-900 dark:text-white">عبد الرحيم سيام</h2>
-          <p className="text-xs text-slate-500 dir-ltr text-right font-mono">+970 59-900-0000</p>
-          <span className="inline-block mt-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">
-            مستخدم موثق (غزة)
+
+        {/* Role Switcher Action */}
+        <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+          <span className="text-xs text-slate-500">
+            وضع الحساب الحالي: <strong className="text-slate-900 dark:text-white">{isDriver ? 'سائق' : 'راكب'}</strong>
           </span>
+          <button
+            type="button"
+            onClick={() => switchRole(isDriver ? 'passenger' : 'driver')}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 transition-colors"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5 text-emerald-600" />
+            <span>التحويل إلى {isDriver ? 'راكب' : 'سائق'}</span>
+          </button>
         </div>
       </div>
 
-      {/* Offline & Data Settings (offline-first-pwa rules) */}
+      {/* Offline & Data Settings */}
       <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
         <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
           <HardDrive className="w-4 h-4 text-emerald-600" />

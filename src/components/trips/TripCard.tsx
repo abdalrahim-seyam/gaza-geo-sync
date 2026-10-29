@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Calendar, MapPin, Users, Phone, CheckCircle2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TripCardProps {
   id: string;
@@ -28,6 +29,7 @@ export function TripCard({
   pricePerSeat,
   onBookSuccess,
 }: TripCardProps) {
+  const { user } = useAuth();
   const [bookingState, setBookingState] = useState<'idle' | 'booking' | 'booked' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
@@ -46,7 +48,11 @@ export function TripCard({
       const res = await fetch(`/api/trips/${id}/book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seatsCount: 1 }),
+        body: JSON.stringify({
+          seatsCount: 1,
+          passengerName: user?.name || 'محمود',
+          passengerPhone: user?.phone || '+970599654321',
+        }),
       });
 
       if (res.ok) {
@@ -143,7 +149,9 @@ export function TripCard({
       )}
 
       {errorMessage && (
-        <p className="text-xs text-red-500 dark:text-red-400 text-center">{errorMessage}</p>
+        <div className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/40 p-2 rounded-xl">
+          {errorMessage}
+        </div>
       )}
     </div>
   );

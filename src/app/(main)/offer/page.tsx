@@ -1,12 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Car, Bus, Clock, MapPin, Users, Banknote, CheckCircle, AlertCircle } from 'lucide-react';
+import { Car, Bus, Clock, MapPin, Users, Banknote, CheckCircle, AlertCircle, LogIn, ArrowLeft } from 'lucide-react';
 import { queueOfflineMutation } from '@/lib/offline/sync';
+import { useAuth } from '@/contexts/AuthContext';
+import Link from 'next/link';
 
 export default function OfferTripPage() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const [form, setForm] = useState({
     originName: '',
@@ -19,9 +22,24 @@ export default function OfferTripPage() {
     totalSeats: 6,
     pricePerSeat: 15.0,
     vehicleType: 'AJALA',
-    driverName: 'أبو أحمد',
-    driverPhone: '+970599123456',
+    driverName: user?.name || 'أبو أحمد',
+    driverPhone: user?.phone || '+970599123456',
   });
+
+  // Pre-fill default departure time to 1 hour from now formatted for datetime-local
+  useEffect(() => {
+    const defaultDate = new Date(Date.now() + 3600 * 1000);
+    const localIso = new Date(defaultDate.getTime() - defaultDate.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
+    setForm((prev) => ({
+      ...prev,
+      departureTime: prev.departureTime || localIso,
+      driverName: user?.name || prev.driverName,
+      driverPhone: user?.phone || prev.driverPhone,
+      vehicleType: user?.vehicleType || prev.vehicleType,
+    }));
+  }, [user]);
 
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -44,12 +62,13 @@ export default function OfferTripPage() {
     try {
       const payload = {
         ...form,
+        driverName: user?.name || form.driverName,
+        driverPhone: user?.phone || form.driverPhone,
         totalSeats: Number(form.totalSeats),
         pricePerSeat: Number(form.pricePerSeat),
       };
 
       if (!navigator.onLine) {
-        // Save to offline outbox
         await queueOfflineMutation('CREATE_TRIP', '/api/trips', 'POST', payload);
         setSuccess(true);
         setTimeout(() => router.push('/trips'), 1500);
@@ -70,7 +89,6 @@ export default function OfferTripPage() {
         setErrorMsg(data.error || 'تعذر نشر المشوار');
       }
     } catch (err: any) {
-      // Fallback offline queue
       await queueOfflineMutation('CREATE_TRIP', '/api/trips', 'POST', form);
       setSuccess(true);
       setTimeout(() => router.push('/trips'), 1500);
@@ -81,11 +99,23 @@ export default function OfferTripPage() {
 
   return (
     <div className="space-y-4 max-w-md mx-auto pb-10">
-      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-        <h1 className="text-base font-bold text-slate-900 dark:text-white">طرح خط سير مشوار جديد</h1>
-        <p className="text-xs text-slate-500 mt-1">
-          حدد مسارك اليومي وعدد المقاعد الشاغرة ليتمكن الركاب من حجز أماكنهم.
-        </p>
+      {/* Header */}
+      <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+        <div>
+          <h1 className="text-base font-bold text-slate-900 dark:text-white">طرح خط سير مشوار جديد</h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            حدد مسارك اليومي وعدد المقاعد الشاغرة ليتمكن الركاب من الحجز.
+          </p>
+        </div>
+        {!user && (
+          <Link
+            href="/login"
+            className="shrink-0 px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold text-emerald-600 flex items-center gap-1"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>تسجيل</span>
+          </Link>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -190,7 +220,7 @@ export default function OfferTripPage() {
         {/* Departure Time & Pricing */}
         <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
           <div>
-            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">موعد أول رحلة</label>
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">موعد الرحلة</label>
             <div className="relative">
               <Clock className="w-4 h-4 text-slate-400 absolute start-3 top-3.5" />
               <input
@@ -220,7 +250,7 @@ export default function OfferTripPage() {
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">الأجرة لكل مقعد</label>
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1">الأجرة لكل مقعد (₪)</label>
               <div className="relative">
                 <Banknote className="w-4 h-4 text-slate-400 absolute start-3 top-3.5" />
                 <input
@@ -234,6 +264,18 @@ export default function OfferTripPage() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Driver identity preview */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+          <div>
+            <span className="text-slate-400 block text-[10px]">بيانات السائق الناشر:</span>
+            <span className="font-bold text-slate-800 dark:text-slate-200">{user?.name || form.driverName}</span>
+            <span className="text-slate-500 font-mono ms-2 dir-ltr">{user?.phone || form.driverPhone}</span>
+          </div>
+          <Link href="/login" className="text-emerald-600 font-semibold hover:underline text-[11px]">
+            تعديل
+          </Link>
         </div>
 
         {errorMsg && (
