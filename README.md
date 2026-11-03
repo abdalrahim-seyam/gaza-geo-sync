@@ -1,4 +1,4 @@
-# mMshwar (مشوار)
+# Mishwar (مشوار)
 
 منصة نقل وتشارك المشاوير في قطاع غزة - تعمل بدون إنترنت أولاً.
 Offline-first, native-feeling PWA for public transit & carpooling across the Gaza Strip.
